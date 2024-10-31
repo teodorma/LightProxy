@@ -11,15 +11,11 @@ endif()
 # Ensure OpenSSL is found and required
 find_package(OpenSSL REQUIRED)
 
-# Add the executable and specify the source files
-add_executable(software_engineering_product_topteam
+add_executable(proxy
         Proxy/main.cpp
         Proxy/Logger.h
         Proxy/LoadBalancer.h
 )
 
-# Include the OpenSSL directories
-target_include_directories(software_engineering_product_topteam PRIVATE ${OPENSSL_INCLUDE_DIR})
-
-# Link the OpenSSL libraries
-target_link_libraries(software_engineering_product_topteam OpenSSL::SSL OpenSSL::Crypto)
+target_include_directories(proxy PRIVATE ${OPENSSL_INCLUDE_DIR})
+target_link_libraries(proxy OpenSSL::SSL OpenSSL::Crypto)
