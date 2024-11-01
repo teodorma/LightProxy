@@ -151,7 +151,6 @@ std::string forward_to_backend(const std::string& request, const std::string& ba
     return response;
 }
 
-
 void handle_client(int client_sock, SSL* ssl, LoadBalancer& load_balancer, Logger& logger) {
     char buffer[4096];
     int bytes = SSL_read(ssl, buffer, sizeof(buffer));
@@ -171,54 +170,6 @@ void handle_client(int client_sock, SSL* ssl, LoadBalancer& load_balancer, Logge
     logger.log("Response sent to client");
 }
 
-
-/*
-void handle_client(int client_sock, SSL* ssl, Logger& logger) {
-    // Buffer to store the client request
-    char buffer[4096];
-    int bytes = SSL_read(ssl, buffer, sizeof(buffer) - 1);
-
-    if (bytes <= 0) {
-        ERR_print_errors_fp(stderr);
-        logger.log("Error: Failed to read from SSL connection");
-        SSL_shutdown(ssl);
-        SSL_free(ssl);
-        close(client_sock);
-        return;
-    }
-
-    buffer[bytes] = '\0';
-    std::string request(buffer);
-
-    if (request.find("GET / ") == 0) {
-        std::ifstream html_file("../Proxy/index.html");
-        if (!html_file.is_open()) {
-            logger.log("Failed to open index.html");
-            std::cerr << "Failed to open index.html" << std::endl;
-            SSL_shutdown(ssl);
-            SSL_free(ssl);
-            close(client_sock);
-            return;
-        }
-
-        std::string html_content((std::istreambuf_iterator<char>(html_file)),
-                                 std::istreambuf_iterator<char>());
-
-        std::string response = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: " +
-                               std::to_string(html_content.size()) + "\r\nConnection: close\r\n\r\n" + html_content;
-
-        if (SSL_write(ssl, response.c_str(), response.size()) <= 0) {
-            ERR_print_errors_fp(stderr);
-            logger.log("Error: Failed to write response to SSL connection");
-        }
-    }
-
-    SSL_shutdown(ssl);
-    SSL_free(ssl);
-    close(client_sock);
-}*/
-
-
 [[noreturn]] void run_server(SSL_CTX* ctx, LoadBalancer& load_balancer, Logger& logger) {
     logger.log("Server startup");
 
@@ -229,10 +180,19 @@ void handle_client(int client_sock, SSL* ssl, Logger& logger) {
         exit(EXIT_FAILURE);
     }
 
-    sockaddr_in6 server_addr{};  // Use sockaddr_in6 for IPv6
+    // Allow the socket to support both IPv4 and IPv6
+    int option = 0;
+    if (setsockopt(server_sock, IPPROTO_IPV6, IPV6_V6ONLY, (void*)&option, sizeof(option)) < 0) {
+        perror("Failed to set IPV6_V6ONLY option");
+        logger.log("Warning: Failed to set IPV6_V6ONLY option");
+        close(server_sock);
+        exit(EXIT_FAILURE);
+    }
+
+    sockaddr_in6 server_addr{};  // Use sockaddr_in6 for IPv4/IPv6 support
     server_addr.sin6_family = AF_INET6;
     server_addr.sin6_port = htons(PORT);
-    server_addr.sin6_addr = in6addr_any;  // Bind to all available IPv6 addresses
+    server_addr.sin6_addr = in6addr_any;  // Bind to all available addresses
 
     if (bind(server_sock, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
         perror("Bind failed");
