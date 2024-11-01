@@ -60,6 +60,43 @@ After installing dependencies, clone the repository and build the project with C
 The server will start listening on port 443 by default, accepting secure client connections, decrypting traffic, and distributing requests to configured backend servers.
 
 
+## Setting up systemd Service for Proxy Server (Optional)
+Open a new service file in /etc/systemd/system/:
+```bash
+sudo nano /etc/systemd/system/server.service
+```
+Add the following configuration, replacing paths as needed:
+```
+   [Unit]
+   Description=Proxy Server Service
+   After=network.target
+   
+   [Service]
+   ExecStart=/your/path
+   WorkingDirectory=/your/path
+   User=root
+   Restart=on-failure
+   RestartSec=5
+   StandardOutput=journal
+   StandardError=journal
+   Environment="PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+   
+   [Install]
+   WantedBy=multi-user.target
+```
+
+Reload systemd to apply the new service configuration:
+```bash
+   # Reload systemd to apply the new service configuration:
+   sudo systemctl daemon-reload
+   
+   # Enable the service to start on boot:
+   sudo systemctl enable server.service
+   
+   # Start the service: 
+   sudo systemctl start server.service
+```
+
 ## Contact
 For questions or feedback, contact me at teodormaciuca1@gmail.com.
 This expanded README provides configuration instructions, usage examples, code structure details, troubleshooting tips, and contact information to help users get started with and maintain the project. Let me know if there’s anything more specific you’d like to add!
